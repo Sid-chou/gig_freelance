@@ -155,6 +155,7 @@ const hireBid = async (req, res) => {
         // Find the bid with session
         const bid = await Bid.findById(bidId)
             .populate('gigId')
+            .populate('freelancerId', 'name email')
             .session(session);
 
         if (!bid) {
@@ -222,6 +223,26 @@ const hireBid = async (req, res) => {
         const updatedBid = await Bid.findById(bidId)
             .populate('freelancerId', 'name email')
             .populate('gigId', 'title budget status');
+
+        // 🔔 EMIT SOCKET.IO NOTIFICATION
+        const io = req.app.get('io');
+        if (io && bid.freelancerId) {
+            const notification = {
+                type: 'hired',
+                message: `🎉 Congratulations! You've been hired for "${gig.title}"`,
+                gig: {
+                    id: gig._id,
+                    title: gig.title,
+                    budget: gig.budget,
+                },
+                bidAmount: bid.proposedPrice,
+                timestamp: new Date(),
+            };
+
+            // Emit to the specific freelancer's room
+            io.to(bid.freelancerId._id.toString()).emit('hire-notification', notification);
+            console.log(`📢 Notification sent to user ${bid.freelancerId._id}`);
+        }
 
         res.status(200).json({
             success: true,
