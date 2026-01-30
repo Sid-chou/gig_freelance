@@ -42,10 +42,26 @@ io.on('connection', (socket) => {
 // Make io accessible to routes
 app.set('io', io);
 
-// CORS middleware
+// CORS middleware - Allow multiple origins
+const allowedOrigins = [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    'http://localhost:5173',
+    'http://localhost:3000',
+];
+
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            // Check if origin is in allowed list or is a Vercel preview deployment
+            if (allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
     })
 );
