@@ -13,8 +13,11 @@ API.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Handle unauthorized - could redirect to login
-            window.location.href = '/login';
+            // Only redirect to login if not already on auth pages
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/login' && currentPath !== '/register') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
